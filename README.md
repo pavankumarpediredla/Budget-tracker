@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BudgetFlow
 
 BudgetFlow is a simple full-stack budget management app built with React, Redux Toolkit, and Spring Boot. It is designed as a mobile-friendly web app that can be deployed free and used live.
@@ -81,3 +82,6 @@ Recommended quick demo deployment:
    - deploy Spring Boot backend to Render
 3. Set frontend env:
    - `VITE_API_BASE_URL=https://your-backend-url/api`
+=======
+# Budget-tracker
+>>>>>>> 9b911579568b9b720fdc6261d4f0f8bc507def10
