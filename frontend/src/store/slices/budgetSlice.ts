@@ -2,7 +2,11 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import type { RootState } from "../index";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.PROD
+    ? "https://budget-tracker-3miv.onrender.com/api"
+    : "http://localhost:8081/api");
 
 export type Transaction = {
   id: number;

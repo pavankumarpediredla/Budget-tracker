@@ -1,6 +1,10 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.PROD
+    ? "https://budget-tracker-3miv.onrender.com/api"
+    : "http://localhost:8081/api");
 const SIGNUP_EMAIL_KEY = "budget_signup_email";
 const SIGNUP_OTP_HINT_KEY = "budget_signup_otp_hint";
 
