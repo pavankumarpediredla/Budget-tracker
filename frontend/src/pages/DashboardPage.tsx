@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -23,16 +23,46 @@ const currencySymbols: Record<string, string> = {
 };
 
 const menuItems = [
-  { id: "analytics", label: "Analytics", icon: "A" },
-  { id: "transactions", label: "Transactions", icon: "T" },
-  { id: "planner", label: "Planner", icon: "P" },
-  { id: "emi", label: "EMI Tracker", icon: "E" },
-  { id: "goals", label: "Goals", icon: "G" },
-  { id: "profile", label: "Profile", icon: "U" },
-  { id: "coach", label: "AI Coach", icon: "C" },
+  { id: "analytics", label: "Analytics", icon: "◔" },
+  { id: "transactions", label: "Transactions", icon: "⇄" },
+  { id: "planner", label: "Planner", icon: "◫" },
+  { id: "emi", label: "EMI Tracker", icon: "◎" },
+  { id: "goals", label: "Goals", icon: "◈" },
+  { id: "profile", label: "Profile", icon: "◌" },
+  { id: "coach", label: "AI Coach", icon: "✦" },
 ] as const;
 
-type MenuSection = (typeof menuItems)[number]["id"];
+const titleOptions = ["Mr", "Ms", "Mrs", "Mx"] as const;
+const designationOptions = [
+  "Government Servant",
+  "Software Developer",
+  "Software Engineer",
+  "Teacher",
+  "Doctor",
+  "Nurse",
+  "Accountant",
+  "Bank Employee",
+  "Sales Executive",
+  "Business Owner",
+  "Plumber",
+  "Carpenter",
+  "Electrician",
+  "Mechanic",
+  "Student",
+  "Homemaker",
+  "Other",
+] as const;
+const sidebarItems = [
+  { id: "analytics", label: "Analytics", icon: "\u25f7" },
+  { id: "transactions", label: "Transactions", icon: "\u21c6" },
+  { id: "planner", label: "Planner", icon: "\u25a6" },
+  { id: "emi", label: "EMI Tracker", icon: "\u25ce" },
+  { id: "goals", label: "Goals", icon: "\u25c8" },
+  { id: "profile", label: "Profile", icon: "\u263b" },
+  { id: "settings", label: "Settings", icon: "\u2699" },
+  { id: "coach", label: "AI Coach", icon: "\u2726" },
+] as const;
+type MenuSection = (typeof sidebarItems)[number]["id"];
 
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
@@ -50,13 +80,15 @@ const DashboardPage = () => {
   const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
 
   const [profileForm, setProfileForm] = useState({
+    title: "Mr",
     fullName: "",
     email: "",
     phone: "",
     address: "",
     occupation: "",
+    occupationOther: "",
     company: "",
-    age: "18",
+    age: "",
     imageUrl: "",
     currencyCode: "INR",
   });
@@ -91,6 +123,7 @@ const DashboardPage = () => {
   const [advicePrompt, setAdvicePrompt] = useState(
     "I want to manage my salary safely and save for a bigger future goal.",
   );
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     dispatch(fetchDashboard());
@@ -98,11 +131,13 @@ const DashboardPage = () => {
 
   useEffect(() => {
     setProfileForm({
+      title: profile.title || "Mr",
       fullName: profile.fullName,
       email: profile.email,
       phone: profile.phone,
       address: profile.address,
-      occupation: profile.occupation,
+      occupation: designationOptions.includes(profile.occupation as (typeof designationOptions)[number]) ? profile.occupation : "Other",
+      occupationOther: designationOptions.includes(profile.occupation as (typeof designationOptions)[number]) ? "" : profile.occupation,
       company: profile.company,
       age: String(profile.age || 18),
       imageUrl: profile.imageUrl,
@@ -118,10 +153,71 @@ const DashboardPage = () => {
     });
   }, [planner]);
 
+  useEffect(() => {
+    const pendingToast = sessionStorage.getItem("budget_toast_message") ?? "";
+    if (!pendingToast) {
+      return;
+    }
+    setToastMessage(pendingToast);
+    sessionStorage.removeItem("budget_toast_message");
+    const timeout = window.setTimeout(() => setToastMessage(""), 2600);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   const currencyCode = planner.currencyCode || profile.currencyCode || "INR";
   const currencySymbol = useMemo(() => currencySymbols[currencyCode] ?? "", [currencyCode]);
+  const displayName = profile.fullName || username;
+  const displayRole = [profile.occupation, profile.company].filter(Boolean).join(" at ") || "Budget user";
+  const titledName = [profile.title, displayName].filter(Boolean).join(" ");
+  const hasAnalyticsData =
+    analytics.dailySpend.amount > 0 ||
+    analytics.monthlySpend.amount > 0 ||
+    analytics.yearlySpend.amount > 0 ||
+    transactions.length > 0;
+  const upcomingEmis = useMemo(
+    () => emiTrackers.filter((emi) => new Date(emi.endDate) >= new Date()).sort((a, b) => a.startDate.localeCompare(b.startDate)),
+    [emiTrackers],
+  );
 
   const formatMoney = (amountValue: number) => `${currencySymbol}${amountValue.toFixed(2)}`;
+  const getAvatarText = (title: string, name: string) => {
+    const source = name.trim();
+    if (!source) {
+      return title || "BF";
+    }
+    return source
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("");
+  };
+  const sidebarInitial = (displayName || username || "U").trim().charAt(0).toUpperCase();
+  const renderAvatar = (imageUrl: string, title: string, name: string, className: string) =>
+    imageUrl ? (
+      <img alt={name || "Profile"} src={imageUrl} />
+    ) : (
+      <div className={`${className} avatar-fallback`}>{getAvatarText(title, name)}</div>
+    );
+  const renderEmptyState = (title: string, message: string) => (
+    <div className="empty-state">
+      <strong>{title}</strong>
+      <span>{message}</span>
+    </div>
+  );
+
+  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = typeof reader.result === "string" ? reader.result : "";
+      setProfileForm((current) => ({ ...current, imageUrl: value }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleLogout = () => {
     dispatch(logout());
@@ -147,7 +243,20 @@ const DashboardPage = () => {
 
   const handleProfileSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    await dispatch(updateProfile({ ...profileForm, age: Number(profileForm.age) }));
+    await dispatch(
+      updateProfile({
+        title: profileForm.title,
+        fullName: profileForm.fullName,
+        email: profileForm.email,
+        phone: profileForm.phone,
+        address: profileForm.address,
+        occupation: profileForm.occupation === "Other" ? profileForm.occupationOther : profileForm.occupation,
+        company: profileForm.company,
+        age: Number(profileForm.age),
+        imageUrl: profileForm.imageUrl,
+        currencyCode: profileForm.currencyCode,
+      }),
+    );
   };
 
   const handlePlannerSubmit = async (event: FormEvent) => {
@@ -250,7 +359,7 @@ const DashboardPage = () => {
               <p className="muted">Color intensity indicates higher expense load.</p>
             </div>
           </div>
-          <div className="chart-grid">
+          {hasAnalyticsData ? <div className="chart-grid">
             {analytics.weeklyTrend.map((point) => {
               const height = Math.max(18, Math.min(120, point.amount));
               return (
@@ -264,7 +373,7 @@ const DashboardPage = () => {
                 </div>
               );
             })}
-          </div>
+          </div> : renderEmptyState("No analytics found", "Add transactions to see your current weekly spending trend.")}
         </article>
 
         <article className="panel-card">
@@ -303,7 +412,7 @@ const DashboardPage = () => {
               <p className="muted">Spending pattern across the year</p>
             </div>
           </div>
-          <div className="trend-list">
+          {hasAnalyticsData ? <div className="trend-list">
             {analytics.monthlyTrend.map((point) => (
               <div key={point.label} className="trend-row">
                 <span>{point.label}</span>
@@ -313,7 +422,7 @@ const DashboardPage = () => {
                 <strong>{formatMoney(point.amount)}</strong>
               </div>
             ))}
-          </div>
+          </div> : renderEmptyState("No yearly analytics found", "Yearly analytics will appear after you add real transactions.")}
         </article>
 
         <article className="panel-card">
@@ -323,7 +432,7 @@ const DashboardPage = () => {
               <p className="muted">Where your money is going</p>
             </div>
           </div>
-          <div className="trend-list">
+          {analytics.categoryBreakdown.length ? <div className="trend-list">
             {analytics.categoryBreakdown.map((item) => (
               <div key={item.category} className="trend-row">
                 <span>{item.category}</span>
@@ -333,7 +442,33 @@ const DashboardPage = () => {
                 <strong>{formatMoney(item.amount)}</strong>
               </div>
             ))}
+          </div> : renderEmptyState("No category data found", "Expense categories will appear here after you add spending data.")}
+        </article>
+      </section>
+
+      <section className="overview-grid">
+        <article className="panel-card">
+          <div className="section-heading">
+            <div>
+              <h3>Upcoming EMI</h3>
+              <p className="muted">Current active loans and installments.</p>
+            </div>
           </div>
+          {upcomingEmis.length ? (
+            <div className="goal-list">
+              {upcomingEmis.map((emi) => (
+                <div className="goal-item" key={emi.id}>
+                  <div>
+                    <strong>{emi.title}</strong>
+                    <div className="transaction-type">{emi.lender} | ends {emi.endDate}</div>
+                  </div>
+                  <div className="goal-metric">{formatMoney(emi.monthlyEmi)}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            renderEmptyState("No upcoming EMI found", "Your future EMI schedule will appear here once you add one.")
+          )}
         </article>
       </section>
     </div>
@@ -365,6 +500,9 @@ const DashboardPage = () => {
                 <option>Transport</option>
                 <option>Shopping</option>
                 <option>Salary</option>
+                <option>Side Income</option>
+                <option>Trading</option>
+                <option>Business</option>
                 <option>Freelance</option>
                 <option>Bills</option>
                 <option>Health</option>
@@ -390,7 +528,7 @@ const DashboardPage = () => {
             </div>
           </div>
           <div className="transaction-list">
-            {transactions.map((transaction) => (
+            {transactions.length ? transactions.map((transaction) => (
               <div className="transaction-item" key={transaction.id}>
                 <div>
                   <strong>{transaction.title}</strong>
@@ -403,7 +541,7 @@ const DashboardPage = () => {
                   {formatMoney(transaction.amount)}
                 </div>
               </div>
-            ))}
+            )) : renderEmptyState("No transactions found", "Add your first income or expense to start tracking live data.")}
           </div>
         </article>
       </section>
@@ -449,7 +587,7 @@ const DashboardPage = () => {
           </div>
         </div>
         <div className="allocation-grid">
-          {planner.allocations.map((allocation) => (
+          {planner.allocations.length ? planner.allocations.map((allocation) => (
             <div key={allocation.category} className="allocation-item">
               <div>
                 <strong>{allocation.category}</strong>
@@ -457,7 +595,7 @@ const DashboardPage = () => {
               </div>
               <strong>{formatMoney(allocation.amount)}</strong>
             </div>
-          ))}
+          )) : renderEmptyState("No planner data found", "Set your salary and emergency target to generate a live planner split.")}
         </div>
       </article>
     </section>
@@ -501,7 +639,7 @@ const DashboardPage = () => {
           </div>
         </div>
         <div className="goal-list">
-          {goals.map((goal) => (
+          {goals.length ? goals.map((goal) => (
             <div className="goal-item" key={goal.id}>
               <div>
                 <strong>{goal.title}</strong>
@@ -511,7 +649,7 @@ const DashboardPage = () => {
               </div>
               <div className="goal-metric">{formatMoney(goal.recommendedMonthlySaving)}/month</div>
             </div>
-          ))}
+          )) : renderEmptyState("No goals found", "Add a financial goal to track monthly saving recommendations.")}
         </div>
       </article>
     </section>
@@ -589,7 +727,7 @@ const DashboardPage = () => {
           </div>
         </div>
         <div className="goal-list">
-          {emiTrackers.map((emi) => (
+          {emiTrackers.length ? emiTrackers.map((emi) => (
             <button
               key={emi.id}
               type="button"
@@ -616,7 +754,7 @@ const DashboardPage = () => {
                 {formatMoney(emi.monthlyEmi)} x {emi.monthsRemaining}
               </div>
             </button>
-          ))}
+          )) : renderEmptyState("No EMI found", "Add an EMI or loan to track upcoming installments here.")}
         </div>
       </article>
     </section>
@@ -632,15 +770,21 @@ const DashboardPage = () => {
       </div>
       <div className="profile-layout">
         <div className="profile-preview">
-          <img alt={profile.fullName || "Profile"} src={profileForm.imageUrl} />
+          {renderAvatar(profileForm.imageUrl, profileForm.title, profileForm.fullName, "profile-avatar")}
           <div>
-            <strong>{profile.fullName}</strong>
-            <div className="transaction-type">
-              {profile.occupation} at {profile.company}
-            </div>
+            <strong>{[profileForm.title, profileForm.fullName].filter(Boolean).join(" ") || username}</strong>
+            <div className="transaction-type">{[profileForm.occupation, profileForm.company].filter(Boolean).join(" at ") || "Budget user"}</div>
           </div>
         </div>
         <div className="form-stack compact-grid profile-fields">
+          <label className="field-label">
+            Title
+            <select className="field-select" value={profileForm.title} onChange={(e) => setProfileForm((c) => ({ ...c, title: e.target.value }))}>
+              {titleOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
           <label className="field-label">
             Full name
             <input className="field-input" value={profileForm.fullName} onChange={(e) => setProfileForm((c) => ({ ...c, fullName: e.target.value }))} required />
@@ -651,7 +795,7 @@ const DashboardPage = () => {
           </label>
           <label className="field-label">
             Phone
-            <input className="field-input" value={profileForm.phone} onChange={(e) => setProfileForm((c) => ({ ...c, phone: e.target.value }))} required />
+            <input className="field-input" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={profileForm.phone} onChange={(e) => setProfileForm((c) => ({ ...c, phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))} required />
           </label>
           <label className="field-label">
             Age
@@ -662,16 +806,30 @@ const DashboardPage = () => {
             <input className="field-input" value={profileForm.address} onChange={(e) => setProfileForm((c) => ({ ...c, address: e.target.value }))} required />
           </label>
           <label className="field-label">
-            Occupation
-            <input className="field-input" value={profileForm.occupation} onChange={(e) => setProfileForm((c) => ({ ...c, occupation: e.target.value }))} required />
+            Designation
+            <select className="field-select" value={profileForm.occupation} onChange={(e) => setProfileForm((c) => ({ ...c, occupation: e.target.value }))}>
+              {designationOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
           </label>
+          {profileForm.occupation === "Other" ? (
+            <label className="field-label">
+              Enter designation
+              <input className="field-input" value={profileForm.occupationOther} onChange={(e) => setProfileForm((c) => ({ ...c, occupationOther: e.target.value }))} required />
+            </label>
+          ) : null}
           <label className="field-label">
             Company
             <input className="field-input" value={profileForm.company} onChange={(e) => setProfileForm((c) => ({ ...c, company: e.target.value }))} required />
           </label>
           <label className="field-label">
             Image URL
-            <input className="field-input" value={profileForm.imageUrl} onChange={(e) => setProfileForm((c) => ({ ...c, imageUrl: e.target.value }))} required />
+            <input className="field-input" value={profileForm.imageUrl} onChange={(e) => setProfileForm((c) => ({ ...c, imageUrl: e.target.value }))} placeholder="Paste an image URL or upload below" />
+          </label>
+          <label className="field-label">
+            Upload image
+            <input className="field-input" type="file" accept="image/*" onChange={handleImageUpload} />
           </label>
         </div>
       </div>
@@ -693,6 +851,8 @@ const DashboardPage = () => {
         return renderEmi();
       case "profile":
         return renderProfile();
+      case "settings":
+        return renderProfile();
       case "coach":
         return renderCoach();
       case "analytics":
@@ -713,81 +873,61 @@ const DashboardPage = () => {
       ) : null}
 
       <aside className={`budget-sidebar ${isSidebarOpen ? "budget-sidebar--open" : ""}`}>
-        <div className="budget-brand">
-          <div className="budget-brand__logo">BF</div>
-          <div>
-            <strong>BudgetFlow</strong>
-            <div className="transaction-type">Personal finance workspace</div>
+        <div className="sidebar-rail">
+          <div className="budget-brand budget-brand--compact budget-brand--profile">
+            <div className="sidebar-brand-avatar sidebar-brand-avatar--initial">{sidebarInitial}</div>
+            <div className="sidebar-brand-text">
+              <strong>{displayName}</strong>
+            </div>
           </div>
-        </div>
 
-        <button
-          type="button"
-          className="sidebar-close-button"
-          onClick={() => setIsSidebarOpen(false)}
-        >
-          Close
-        </button>
-
-        <div className="sidebar-profile">
-          <img alt={profile.fullName || username} src={profile.imageUrl} />
-          <div>
-            <strong>{profile.fullName || username}</strong>
-            <div className="transaction-type">{profile.occupation || "Budget user"}</div>
-          </div>
-        </div>
-
-        <nav className="sidebar-menu">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`sidebar-menu__item ${activeSection === item.id ? "sidebar-menu__item--active" : ""}`}
-              onClick={() => {
-                if (item.id === "coach") {
-                  setIsCoachOpen(true);
+          <nav className="sidebar-menu">
+            {sidebarItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                title={item.label}
+                className={`sidebar-menu__item sidebar-menu__item--rail ${activeSection === item.id ? "sidebar-menu__item--active" : ""}`}
+                onClick={() => {
+                  if (item.id === "coach") {
+                    setIsCoachOpen(true);
+                  } else {
+                    setActiveSection(item.id);
+                    setIsCoachOpen(false);
+                  }
                   setIsSidebarOpen(false);
-                  return;
-                }
-                setActiveSection(item.id);
-                setIsSidebarOpen(false);
-              }}
-            >
-              <span className="sidebar-menu__icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
+                }}
+              >
+                <span className="sidebar-menu__icon">{item.icon}</span>
+                <span className="sidebar-menu__tooltip">{item.label}</span>
+              </button>
+            ))}
+          </nav>
 
-        <div className="sidebar-footer">
-          <div className="topbar-chip">{currencyCode}</div>
-          <button className="ghost-button" type="button" onClick={handleLogout}>
-            Logout
-          </button>
+          <div className="sidebar-footer sidebar-footer--rail">
+            <div className="topbar-chip">{currencyCode}</div>
+            <button className="ghost-button ghost-button--rail" type="button" onClick={handleLogout}>
+              ↩
+            </button>
+          </div>
         </div>
       </aside>
 
       <main className="budget-main">
         <header className="budget-main__header">
           <div className="budget-main__header-row">
-            <button
-              type="button"
-              className="sidebar-toggle-button"
-              onClick={() => setIsSidebarOpen((current) => !current)}
-            >
-              Menu
-            </button>
             <div>
               <p className="muted">Budget dashboard</p>
-              <h1 className="title">Welcome, {username}</h1>
+              <h1 className="title">Welcome, {displayName}</h1>
               <p className="subtitle">
-                Analytics comes first, with clear trends for daily, monthly, yearly spending and balance in hand.
+                Current year analytics, latest transactions, profile insights, and upcoming EMI updates all stay tied to your own workspace.
               </p>
             </div>
           </div>
         </header>
 
         {error ? <div className="error-banner">{error}</div> : null}
+        {toastMessage ? <div className="success-banner toast-banner toast-banner--floating">{toastMessage}</div> : null}
         {status === "loading" ? <div className="panel-card">Loading dashboard...</div> : null}
 
         {renderSection()}
@@ -838,11 +978,11 @@ const DashboardPage = () => {
 
             <div className="advice-list" style={{ marginTop: "18px" }}>
               <div className="advice-item">{aiAdvice.summary}</div>
-              {aiAdvice.suggestions.map((suggestion) => (
+              {aiAdvice.suggestions.length ? aiAdvice.suggestions.map((suggestion) => (
                 <div className="advice-item" key={suggestion}>
                   {suggestion}
                 </div>
-              ))}
+              )) : renderEmptyState("No advice found", "Add planner or transaction data to generate guidance.")}
             </div>
           </div>
         ) : null}

@@ -27,13 +27,16 @@ public class AuthService {
     private final Map<String, RegisteredUser> usersByEmail = new ConcurrentHashMap<>();
     private final Map<String, PendingSignup> pendingSignups = new ConcurrentHashMap<>();
     private final EmailService emailService;
+    private final BudgetService budgetService;
 
-    public AuthService(EmailService emailService) {
+    public AuthService(EmailService emailService, BudgetService budgetService) {
         this.emailService = emailService;
+        this.budgetService = budgetService;
         RegisteredUser demoUser = new RegisteredUser(
                 "demo",
                 "demo123",
                 new UserProfile(
+                        "Mr",
                         "Demo User",
                         "demo@budgetflow.app",
                         "+91 9876500000",
@@ -47,6 +50,7 @@ public class AuthService {
         );
         usersByUsername.put(demoUser.getUsername().toLowerCase(), demoUser);
         usersByEmail.put(demoUser.getProfile().getEmail().toLowerCase(), demoUser);
+        budgetService.initializeDemoUser(demoUser.getUsername(), demoUser.getProfile());
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -103,6 +107,7 @@ public class AuthService {
 
         SignupRequest signupRequest = pendingSignup.getSignupRequest();
         UserProfile profile = new UserProfile(
+                signupRequest.getTitle(),
                 signupRequest.getFullName(),
                 signupRequest.getEmail(),
                 signupRequest.getPhone(),
@@ -123,8 +128,11 @@ public class AuthService {
         usersByUsername.put(registeredUser.getUsername().toLowerCase(), registeredUser);
         usersByEmail.put(profile.getEmail().toLowerCase(), registeredUser);
         pendingSignups.remove(emailKey);
+        budgetService.initializeNewUser(registeredUser.getUsername(), profile);
 
-        return new LoginResponse(registeredUser.getUsername(), "", "Account verified successfully. Please login.");
+        String token = UUID.randomUUID().toString();
+        tokens.put(token, registeredUser.getUsername());
+        return new LoginResponse(registeredUser.getUsername(), token, "Account verified successfully.");
     }
 
     public String getUsernameFromToken(String token) {

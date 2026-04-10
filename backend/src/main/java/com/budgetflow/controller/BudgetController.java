@@ -38,8 +38,8 @@ public class BudgetController {
 
     @GetMapping("/dashboard")
     public BudgetDashboardResponse getDashboard(@RequestHeader("Authorization") String authorization) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.getDashboard();
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.getDashboard(username);
     }
 
     @PostMapping("/transactions")
@@ -47,8 +47,8 @@ public class BudgetController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody TransactionRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.addTransaction(request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.addTransaction(username, request);
     }
 
     @PutMapping("/profile")
@@ -56,8 +56,8 @@ public class BudgetController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody ProfileRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.updateProfile(request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.updateProfile(username, request);
     }
 
     @PutMapping("/planner")
@@ -65,8 +65,8 @@ public class BudgetController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody BudgetPlannerRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.updatePlanner(request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.updatePlanner(username, request);
     }
 
     @PostMapping("/goals")
@@ -74,8 +74,8 @@ public class BudgetController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody GoalPlanRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.addGoal(request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.addGoal(username, request);
     }
 
     @PostMapping("/advice")
@@ -83,8 +83,8 @@ public class BudgetController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody AdviceRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.generateAdvice(request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.generateAdvice(username, request);
     }
 
     @PostMapping("/emi")
@@ -92,8 +92,8 @@ public class BudgetController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody EmiTrackerRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.addEmi(request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.addEmi(username, request);
     }
 
     @PutMapping("/emi/{emiId}")
@@ -102,8 +102,8 @@ public class BudgetController {
             @PathVariable Long emiId,
             @Valid @RequestBody EmiTrackerRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.updateEmi(emiId, request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.updateEmi(username, emiId, request);
     }
 
     @PostMapping("/emi/search")
@@ -111,8 +111,8 @@ public class BudgetController {
             @RequestHeader("Authorization") String authorization,
             @RequestBody EmiSearchRequest request
     ) {
-        authService.getUsernameFromToken(extractToken(authorization));
-        return budgetService.searchEmi(request);
+        String username = authService.getUsernameFromToken(extractToken(authorization));
+        return budgetService.searchEmi(username, request);
     }
 
     private String extractToken(String authorization) {

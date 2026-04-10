@@ -12,7 +12,7 @@ import {
 const VerifyOtpPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { status, error, message } = useAppSelector((state) => state.auth);
+  const { status, error, message, token } = useAppSelector((state) => state.auth);
   const [otp, setOtp] = useState("");
   const email = getPendingSignupEmail();
   const otpHint = getPendingOtpHint();
@@ -24,17 +24,15 @@ const VerifyOtpPage = () => {
   }, [email, navigate]);
 
   useEffect(() => {
-    if (message === "Account verified successfully. Please login.") {
+    if (token && message === "Account verified successfully.") {
       const timeout = window.setTimeout(() => {
         dispatch(clearAuthFeedback());
-        navigate("/login", {
-          state: { verifiedMessage: "OTP verified. You can login now." },
-        });
+        navigate("/dashboard");
       }, 1400);
 
       return () => window.clearTimeout(timeout);
     }
-  }, [dispatch, message, navigate]);
+  }, [dispatch, message, navigate, token]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -71,7 +69,7 @@ const VerifyOtpPage = () => {
           </div>
         ) : null}
 
-        {message ? <div className="success-banner">{message}</div> : null}
+        {message ? <div className="success-banner toast-banner">{message}</div> : null}
         {error ? <div className="error-banner">{error}</div> : null}
 
         <p className="subtitle">

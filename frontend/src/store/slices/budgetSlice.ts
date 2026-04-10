@@ -24,6 +24,7 @@ export type BudgetAllocation = {
 };
 
 export type UserProfile = {
+  title: string;
   fullName: string;
   email: string;
   phone: string;
@@ -136,6 +137,7 @@ type EmiSearchRequest = {
 };
 
 const emptyProfile: UserProfile = {
+  title: "Mr",
   fullName: "",
   email: "",
   phone: "",

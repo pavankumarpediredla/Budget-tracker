@@ -3,8 +3,12 @@ package com.budgetflow.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public class ProfileRequest {
+
+    @NotBlank(message = "Title is required.")
+    private String title;
 
     @NotBlank(message = "Full name is required.")
     private String fullName;
@@ -14,6 +18,7 @@ public class ProfileRequest {
     private String email;
 
     @NotBlank(message = "Phone is required.")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits.")
     private String phone;
 
     @NotBlank(message = "Address is required.")
@@ -28,11 +33,18 @@ public class ProfileRequest {
     @Min(value = 18, message = "Age must be at least 18.")
     private int age;
 
-    @NotBlank(message = "Image URL is required.")
     private String imageUrl;
 
     @NotBlank(message = "Currency code is required.")
     private String currencyCode;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
     public String getFullName() {
         return fullName;

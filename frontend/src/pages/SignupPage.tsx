@@ -4,18 +4,40 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { clearAuthFeedback, signup } from "../store/slices/authSlice";
 
+const designationOptions = [
+  "Government Servant",
+  "Software Developer",
+  "Software Engineer",
+  "Teacher",
+  "Doctor",
+  "Nurse",
+  "Accountant",
+  "Bank Employee",
+  "Sales Executive",
+  "Business Owner",
+  "Plumber",
+  "Carpenter",
+  "Electrician",
+  "Mechanic",
+  "Student",
+  "Homemaker",
+  "Other",
+] as const;
+
 const SignupPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { status, error, message } = useAppSelector((state) => state.auth);
   const [formData, setFormData] = useState({
+    title: "Mr",
     username: "",
     password: "",
     fullName: "",
     email: "",
     phone: "",
     address: "",
-    occupation: "",
+    occupation: "Software Engineer",
+    occupationOther: "",
     company: "",
     age: "18",
     currencyCode: "INR",
@@ -35,8 +57,17 @@ const SignupPage = () => {
     event.preventDefault();
     await dispatch(
       signup({
-        ...formData,
+        title: formData.title,
+        username: formData.username,
+        password: formData.password,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        occupation: formData.occupation === "Other" ? formData.occupationOther : formData.occupation,
+        company: formData.company,
         age: Number(formData.age),
+        currencyCode: formData.currencyCode,
       }),
     );
   };
@@ -49,6 +80,15 @@ const SignupPage = () => {
         <p className="subtitle">Fill your details, receive OTP, verify, then login.</p>
 
         <form className="form-stack compact-grid" onSubmit={handleSubmit}>
+          <label className="field-label">
+            Title
+            <select className="field-select" value={formData.title} onChange={(e) => setFormData((c) => ({ ...c, title: e.target.value }))}>
+              <option value="Mr">Mr</option>
+              <option value="Ms">Ms</option>
+              <option value="Mrs">Mrs</option>
+              <option value="Mx">Mx</option>
+            </select>
+          </label>
           <label className="field-label">
             Username
             <input className="field-input" value={formData.username} onChange={(e) => setFormData((c) => ({ ...c, username: e.target.value }))} required />
@@ -67,7 +107,7 @@ const SignupPage = () => {
           </label>
           <label className="field-label">
             Phone
-            <input className="field-input" value={formData.phone} onChange={(e) => setFormData((c) => ({ ...c, phone: e.target.value }))} required />
+            <input className="field-input" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={formData.phone} onChange={(e) => setFormData((c) => ({ ...c, phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))} required />
           </label>
           <label className="field-label">
             Age
@@ -78,9 +118,19 @@ const SignupPage = () => {
             <input className="field-input" value={formData.address} onChange={(e) => setFormData((c) => ({ ...c, address: e.target.value }))} required />
           </label>
           <label className="field-label">
-            Occupation
-            <input className="field-input" value={formData.occupation} onChange={(e) => setFormData((c) => ({ ...c, occupation: e.target.value }))} required />
+            Designation
+            <select className="field-select" value={formData.occupation} onChange={(e) => setFormData((c) => ({ ...c, occupation: e.target.value }))}>
+              {designationOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
           </label>
+          {formData.occupation === "Other" ? (
+            <label className="field-label">
+              Enter designation
+              <input className="field-input" value={formData.occupationOther} onChange={(e) => setFormData((c) => ({ ...c, occupationOther: e.target.value }))} required />
+            </label>
+          ) : null}
           <label className="field-label">
             Company
             <input className="field-input" value={formData.company} onChange={(e) => setFormData((c) => ({ ...c, company: e.target.value }))} required />

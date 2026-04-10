@@ -2,6 +2,7 @@ package com.budgetflow.model;
 
 public class UserProfile {
 
+    private String title;
     private String fullName;
     private String email;
     private String phone;
@@ -12,8 +13,9 @@ public class UserProfile {
     private String imageUrl;
     private String currencyCode;
 
-    public UserProfile(String fullName, String email, String phone, String address, String occupation,
+    public UserProfile(String title, String fullName, String email, String phone, String address, String occupation,
                        String company, int age, String imageUrl, String currencyCode) {
+        this.title = title;
         this.fullName = fullName;
         this.email = email;
         this.phone = phone;
@@ -23,6 +25,14 @@ public class UserProfile {
         this.age = age;
         this.imageUrl = imageUrl;
         this.currencyCode = currencyCode;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getFullName() {

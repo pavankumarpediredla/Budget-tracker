@@ -7,6 +7,7 @@ const API_BASE_URL =
     : "http://localhost:8081/api");
 const SIGNUP_EMAIL_KEY = "budget_signup_email";
 const SIGNUP_OTP_HINT_KEY = "budget_signup_otp_hint";
+const TOAST_KEY = "budget_toast_message";
 
 type AuthState = {
   username: string;
@@ -28,6 +29,7 @@ type LoginResponse = {
 };
 
 type SignupPayload = {
+  title: string;
   username: string;
   password: string;
   fullName: string;
@@ -177,7 +179,12 @@ const authSlice = createSlice({
       })
       .addCase(verifyOtp.fulfilled, (state, action) => {
         state.status = "idle";
+        state.username = action.payload.username;
+        state.token = action.payload.token;
         state.message = action.payload.message;
+        sessionStorage.setItem("budget_username", action.payload.username);
+        sessionStorage.setItem("budget_token", action.payload.token);
+        sessionStorage.setItem(TOAST_KEY, action.payload.message);
         sessionStorage.removeItem(SIGNUP_EMAIL_KEY);
         sessionStorage.removeItem(SIGNUP_OTP_HINT_KEY);
       })
@@ -192,4 +199,6 @@ const authSlice = createSlice({
 export const { logout, clearAuthFeedback } = authSlice.actions;
 export const getPendingSignupEmail = () => sessionStorage.getItem(SIGNUP_EMAIL_KEY) ?? "";
 export const getPendingOtpHint = () => sessionStorage.getItem(SIGNUP_OTP_HINT_KEY) ?? "";
+export const getToastMessage = () => sessionStorage.getItem(TOAST_KEY) ?? "";
+export const clearToastMessage = () => sessionStorage.removeItem(TOAST_KEY);
 export default authSlice.reducer;
